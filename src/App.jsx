@@ -467,16 +467,106 @@ function ResultPanel({ guess, target, category }) {
   const diff = Math.abs(guess - target);
   const pts = computePoints(diff);
   const pct = (x) => Math.round(x * 100);
-  const label = pts === 4 ? '¡Clavado!' : pts === 3 ? 'Excelente' : pts === 2 ? 'Muy bien' : pts === 1 ? 'Casi' : 'Lejos';
+  const label =
+    pts === 4 ? "¡Clavado!"
+      : pts === 3 ? "Excelente"
+        : pts === 2 ? "Muy bien"
+          : pts === 1 ? "Casi"
+            : "Lejos";
+
+  // 🎊 Confeti centrado y optimizado (sin lag, pantalla completa)
+  React.useEffect(() => {
+    if (
+      pts !== 4 ||
+      (typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+    ) {
+      return;
+    }
+
+    let cleanup = () => { };
+    import("canvas-confetti")
+      .then((mod) => {
+        const confetti = mod.default || mod;
+
+        // Canvas dedicado, ocupa toda la pantalla
+        const canvas = document.createElement("canvas");
+        canvas.setAttribute("aria-hidden", "true");
+        canvas.style.position = "fixed";
+        canvas.style.top = "0";
+        canvas.style.left = "0";
+        canvas.style.width = "100vw";
+        canvas.style.height = "100vh";
+        canvas.style.pointerEvents = "none";
+        canvas.style.zIndex = "9999";
+        document.body.appendChild(canvas);
+
+        // Control manual del tamaño (mejor rendimiento)
+        const dpi = () => window.devicePixelRatio || 1;
+        const resizeToWindow = () => {
+          canvas.width = Math.floor(window.innerWidth * dpi());
+          canvas.height = Math.floor(window.innerHeight * dpi());
+        };
+        resizeToWindow();
+        window.addEventListener("resize", resizeToWindow);
+
+        const fire = confetti.create(canvas, {
+          useWorker: true,
+          resize: false, // lo gestionamos manualmente
+        });
+
+        // 🎯 Centro exacto (ajusta y: 0.5 → 0.6 si lo quieres más abajo)
+        const ORIGIN = { x: 0.5, y: 0.5 };
+
+        const burst = (opts = {}) =>
+          fire({
+            particleCount: 48,
+            spread: 90,
+            startVelocity: 45,
+            ticks: 160,
+            gravity: 0.9,
+            scalar: 1,
+            origin: ORIGIN,
+            disableForReducedMotion: true,
+            ...opts,
+          });
+
+        // Dos ráfagas para efecto más natural
+        burst();
+        setTimeout(() => burst({ spread: 110, startVelocity: 35 }), 220);
+
+        // Limpieza
+        cleanup = () => {
+          try {
+            fire.reset();
+          } catch { }
+          window.removeEventListener("resize", resizeToWindow);
+          if (canvas && canvas.parentNode) {
+            canvas.parentNode.removeChild(canvas);
+          }
+        };
+      })
+      .catch(() => { });
+
+    return () => cleanup();
+  }, [pts]);
+
   return (
     <div className="mt-5 p-4 rounded-xl bg-slate-50 border border-slate-200">
       <div className="flex flex-wrap gap-2 items-center justify-between">
-        <div className="text-slate-700">Objetivo: <strong>{pct(target)}%</strong> · Adivinaron: <strong>{pct(guess)}%</strong> · Error: <strong>{pct(diff)}%</strong></div>
-        <div className="text-lg font-semibold">+{pts} {pts === 1 ? 'punto' : 'puntos'} — {label}</div>
+        <div className="text-slate-700">
+          Objetivo: <strong>{pct(target)}%</strong> · Adivinaron:{" "}
+          <strong>{pct(guess)}%</strong> · Error: <strong>{pct(diff)}%</strong>
+        </div>
+        <div className="text-lg font-semibold">
+          +{pts} {pts === 1 ? "punto" : "puntos"} — {label}
+        </div>
       </div>
     </div>
   );
 }
+
 
 /****************************** Editor + Resumen *************************/
 function EditableCategories({ value, onChange, dark }) {
