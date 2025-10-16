@@ -3,6 +3,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  // ¡OJO! usa tu repo real:
-  base: '/wavelenght/',
+  base: '/wavelenght/', // 👈 igual al nombre EXACTO del repo en GitHub
 })
