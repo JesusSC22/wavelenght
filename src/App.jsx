@@ -7,7 +7,7 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 // 3) A oculta y da la pista en voz alta → Jugador B adivina (guess).
 // 4) Revelar y puntuar (result). Al final: summary.
 
-/********************** Utilidades y tests ligeros ************************/ 
+/********************** Utilidades y tests ligeros ************************/
 function shuffle(array) {
   const a = array.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -52,7 +52,7 @@ export function computePoints(diff) {
 }
 
 // Tests ligeros (no rompen en prod)
-(function runDevTests(){
+(function runDevTests() {
   try {
     console.assert(Math.abs(valueToAngleRadians(0) - Math.PI) < 1e-9, 'valueToAngleRadians(0) = π');
     console.assert(Math.abs(valueToAngleRadians(1) - 0) < 1e-9, 'valueToAngleRadians(1) = 0');
@@ -66,16 +66,16 @@ export function computePoints(diff) {
     console.assert(computePoints(0.25) === 1 && computePoints(0.2501) === 0, 'umbral 0.25');
 
     // Paths
-    const t = triangleChordPath(0,0,10, Math.PI, Math.PI/2);
+    const t = triangleChordPath(0, 0, 10, Math.PI, Math.PI / 2);
     console.assert(t.startsWith('M '), 'triangle path');
 
     // Shuffle tests (no muta y conserva longitud)
-    const orig = [1,2,3,4,5];
+    const orig = [1, 2, 3, 4, 5];
     const copy = orig.slice();
     const sh = shuffle(orig);
     console.assert(orig.join(',') === copy.join(','), 'shuffle no muta el array original');
     console.assert(sh.length === orig.length, 'shuffle conserva longitud');
-  } catch (_) {}
+  } catch (_) { }
 })();
 
 /***************************** Datos *************************************/
@@ -130,7 +130,6 @@ export default function WavelengthCoop() {
   const [history, setHistory] = useState([]); // [{round, category, guess, target, points, clue}]
   const [clue, setClue] = useState("");
   const [dark, setDark] = useState(false);
-
   const { w } = useWindowSize();
   const svgWidth = Math.min(720, Math.max(340, Math.floor((w - 64))));
   const radius = Math.floor(svgWidth * 0.48);
@@ -184,21 +183,32 @@ export default function WavelengthCoop() {
   };
 
   // ancho uniforme por banda (fracción del semicírculo)
-  const baseFrac = 0.08; // cada banda ~8% del semicírculo
+  const baseFrac = 0.04; // cada banda ~8% del semicírculo
+
+  // justo encima o cerca de este useMemo
+  const centerFrac = 0.05; // zona correcta (verde) más estrecha que el resto
 
   const arcs = useMemo(() => {
     const t = target; // 0..1
     const center = valueToAngleRadians(t);
-    const mk = (k) => {
-      const half = (k * baseFrac * Math.PI) / 2;
+
+    const mk = (k, frac = baseFrac) => {
+      const half = (k * frac * Math.PI) / 2;
       let a1 = center + half;
       let a2 = center - half;
       a1 = Math.min(Math.PI, Math.max(0, a1));
       a2 = Math.min(Math.PI, Math.max(0, a2));
       return { a1, a2 };
     };
-    return { p1: mk(4), p2: mk(3), p3: mk(2), p4: mk(1) };
-  }, [target, baseFrac]);
+
+    return {
+      p1: mk(4),           // igual que antes (usa baseFrac)
+      p2: mk(3),           // igual
+      p3: mk(2),           // igual
+      p4: mk(1, centerFrac) // solo la zona correcta usa el ancho reducido
+    };
+  }, [target, baseFrac, centerFrac]);
+
 
   const baseArc = useMemo(() => {
     const a1 = Math.PI, a2 = 0;
@@ -325,7 +335,7 @@ function RoundUI({ phase, setPhase, svgWidth, radius, cx, cy, baseArc, arcs, sho
           arcs={arcs}
           showTarget={showTarget}
           guess={guess}
-          onDragMove={(x,y,b) => handlePointerMove(x,y,b)}
+          onDragMove={(x, y, b) => handlePointerMove(x, y, b)}
           interactive={interactive}
           hiddenOverlay={phase === 'seer_ready'}
           dark={dark}
@@ -352,7 +362,7 @@ function RoundUI({ phase, setPhase, svgWidth, radius, cx, cy, baseArc, arcs, sho
           <React.Fragment>
             <span className="text-sm text-slate-600">Jugador B: mueve el dial y elige una posición.</span>
             <div className="w-full md:w-auto">
-              <input type="range" min={0} max={1000} value={Math.round(guess*1000)} onChange={(e)=>setGuess(parseInt(e.target.value,10)/1000)} className="w-full md:w-96" />
+              <input type="range" min={0} max={1000} value={Math.round(guess * 1000)} onChange={(e) => setGuess(parseInt(e.target.value, 10) / 1000)} className="w-full md:w-96" />
               <div className="text-xs text-slate-500 mt-1">También puedes arrastrar el dial.</div>
             </div>
             <button onClick={onScore} className="px-4 py-2 rounded-xl bg-emerald-600 text-white shadow hover:opacity-90">Revelar y puntuar</button>
@@ -488,15 +498,15 @@ function EditableCategories({ value, onChange, dark }) {
   return (
     <div className={`rounded-xl p-3 ${dark ? 'bg-slate-900 border border-slate-700' : 'bg-slate-50 border border-slate-200'}`}>
       <div className="flex gap-2 mb-3">
-        <input className={`flex-1 px-3 py-2 rounded-lg border ${dark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-400' : 'border-slate-300'}`} placeholder="Extremo izquierdo (p.ej., Dulce)" value={left} onChange={e=>setLeft(e.target.value)} />
-        <input className={`flex-1 px-3 py-2 rounded-lg border ${dark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-400' : 'border-slate-300'}`} placeholder="Extremo derecho (p.ej., Salado)" value={right} onChange={e=>setRight(e.target.value)} />
+        <input className={`flex-1 px-3 py-2 rounded-lg border ${dark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-400' : 'border-slate-300'}`} placeholder="Extremo izquierdo (p.ej., Dulce)" value={left} onChange={e => setLeft(e.target.value)} />
+        <input className={`flex-1 px-3 py-2 rounded-lg border ${dark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-400' : 'border-slate-300'}`} placeholder="Extremo derecho (p.ej., Salado)" value={right} onChange={e => setRight(e.target.value)} />
         <button onClick={addRow} className="px-3 py-2 rounded-lg bg-emerald-600 text-white">Añadir</button>
       </div>
       <div className="max-h-64 overflow-auto divide-y divide-slate-200">
         {value.map((c, i) => (
           <div key={i} className="py-2 flex items-center justify-between gap-2">
             <div className="flex-1 text-sm"><span className="font-medium">{c.left}</span> <span className="text-slate-400">↔</span> <span className="font-medium">{c.right}</span></div>
-            <button onClick={()=>removeAt(i)} className="text-xs px-2 py-1 rounded bg-slate-200">Quitar</button>
+            <button onClick={() => removeAt(i)} className="text-xs px-2 py-1 rounded bg-slate-200">Quitar</button>
           </div>
         ))}
         {value.length === 0 && <div className="py-2 text-sm text-slate-500">Añade al menos 1 categoría para jugar.</div>}
@@ -524,7 +534,7 @@ function Summary({ score, history, onRestart, dark }) {
                 <span className="font-medium">{h.category.left}</span> ↔ <span className="font-medium">{h.category.right}</span>
                 {h.clue ? <span className="ml-2 text-slate-500">“{h.clue}”</span> : null}
               </div>
-              <div className="text-sm text-slate-600">Objetivo {Math.round(h.target*100)}% · Adivinaron {Math.round(h.guess*100)}% → <strong>+{h.points}</strong></div>
+              <div className="text-sm text-slate-600">Objetivo {Math.round(h.target * 100)}% · Adivinaron {Math.round(h.guess * 100)}% → <strong>+{h.points}</strong></div>
             </div>
           ))}
         </div>
